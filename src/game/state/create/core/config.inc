@@ -11,6 +11,7 @@ ST_ACHIEVEMENTS = 11;
 ST_SKINS = 13;
 ST_PROMO = 14;
 ST_PRIVACY = 16;
+ST_WORLD = 3;
 game_state = 0;
 language = 0;
 t_dir = 0;

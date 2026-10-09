@@ -36,9 +36,10 @@ static void draw_lobby_money(void) {
 static void draw_lobby(void) {
     check_achievements();
     screen_fill();
-    ctext("Cubic Battle 4", lobby_title_y(), text_color);
+    ctext("Injoer", lobby_title_y(), text_color);
+    ctext_scaled("DEBUG - OFFLINE", lobby_title_y() + 30, text_color, 0.55);
     if (newyear_active() == 1) {
-        ctext_scaled(tr_newyear_banner(), lobby_title_y() + 34, newyear_gold + 0xFF000000, 0.6);
+        ctext_scaled(tr_newyear_banner(), lobby_title_y() + 58, newyear_gold + 0xFF000000, 0.6);
     }
     draw_menu_button(0, tr_play());
     draw_menu_button(1, tr_shop());
@@ -56,7 +57,7 @@ static void draw_modes(void) {
     screen_fill();
     button(tr_back(), menu_x(), modes_row(0), btn_w, btn_h);
     button(tr_solo(), menu_x(), modes_row(1), btn_w, btn_h);
-    button(tr_online(), menu_x(), modes_row(2), btn_w, btn_h);
+    button(world_mode_label(), menu_x(), modes_row(2), btn_w, btn_h);
     button(tr_top(), menu_x(), modes_row(3), btn_w, btn_h);
     button(tr_promo(), menu_x(), modes_row(4), btn_w, btn_h);
     button_scaled(tr_winter_toggle(), menu_x(), modes_row(5), btn_w, btn_h, 0.8);

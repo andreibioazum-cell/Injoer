@@ -21,6 +21,8 @@
 #include "ui/locale_progress_part2.inc"
 #include "ui/locale_extra.inc"
 #include "core/ui.inc"
+#include "roblox/world.inc"
+#include "roblox/world_render.inc"
 #include "ui/progress_classes.inc"
 #include "ui/progress_rewards.inc"
 #include "ui/promo.inc"

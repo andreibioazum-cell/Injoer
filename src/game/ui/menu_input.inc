@@ -93,17 +93,9 @@ static void login_do(void) {
         keyboard_hide();
         return;
     }
-    double res = net_auth(FIREBASE, login_nick, login_pass);
-    if (res != 2) {
-        login_status = res;
-        return;
-    }
-    login_status = 0;
+    /* INJOER DEBUG: offline build, the account server is disabled. */
+    login_status = 4;
     keyboard_hide();
-    keyboard_clear();
-    progress_from_storage();
-    settings_from_storage();
-    start_transition(login_after);
 }
 
 static void update_login(void) {
@@ -187,22 +179,13 @@ static void draw_studio(void) {
 }
 
 static void open_online(void) {
-    if (net_login_status() != 2) {
-        login_after = ST_ONLINE;
-        start_transition(ST_LOGIN);
-        return;
-    }
-    if (net_is_banned(net_login_nick()) == 1) {
-        banned_msg = tr_banned();
-        start_transition(ST_LOBBY);
-        return;
-    }
-    start_transition(ST_ONLINE);
+    /* INJOER DEBUG: offline build, the online battle is replaced by the 3D world. */
+    start_transition(ST_WORLD);
 }
 
 static void open_leaderboard(void) {
+    /* INJOER DEBUG: offline build, no leaderboard fetch from the server. */
     lb_wait = 0;
-    net_leaderboard_fetch(FIREBASE);
     start_transition(ST_LEADERBOARD);
 }
 

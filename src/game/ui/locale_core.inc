@@ -19,7 +19,8 @@ static const char *tr_solo(void) {
     return "Solo";
 }
 
-static const char *tr_online(void) {
+/* INJOER DEBUG: kept for the offline build, the modes screen shows the 3D world instead. */
+static GAME_MAYBE_UNUSED const char *tr_online(void) {
     if (language == 1) {
         return "Онлайн";
     }

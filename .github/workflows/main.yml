@@ -1,4 +1,4 @@
-name: Build Cubic Battle 4 (Pure C)
+name: Build Injoer (Debug, Offline)
 
 on:
   push:
@@ -51,6 +51,7 @@ jobs:
           python3 tools/check_game_file_size.py
           python3 tools/test_resources.py
           python3 tools/test_game_state.py
+          python3 tools/test_world.py
           python3 tools/test_settings_storage.py
           python3 tools/test_cloud_progress.py
           python3 tools/test_promo.py
@@ -152,6 +153,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Cubic-Battle-4-Full-C-APK
+          name: Injoer-Debug-APK
           path: Game.apk
           if-no-files-found: error

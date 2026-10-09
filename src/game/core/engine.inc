@@ -23,6 +23,10 @@ static void leave_screen(double state) {
 }
 
 static double enter_screen(double state) {
+    if (state == ST_WORLD) {
+        init_world();
+        return 1;
+    }
     if (state == ST_SOLO) {
         init_game();
         return 1;
@@ -102,7 +106,7 @@ static void logic_init(void) {
         snd_volume(BUTTON_CLICK_SOUND, 0.7);
     }
     net_set_firebase_key(FB_KEY);
-    net_autologin(FIREBASE);
+    /* INJOER DEBUG: offline build, no auto-login to the account server. */
     progress_from_storage();
     settings_from_storage();
     apply_winter_theme();
@@ -116,7 +120,7 @@ static void update_music(void) {
     if (music_ok == 0) {
         return;
     }
-    if (game_state == ST_SOLO || game_state == ST_ONLINE || newyear_music_active() == 1) {
+    if (game_state == ST_SOLO || game_state == ST_ONLINE || game_state == ST_WORLD || newyear_music_active() == 1) {
         music_level = clamp(music_level - dt / music_fade_out_time, 0, 1);
         snd_volume(LOBBY_MUSIC, music_volume / 100 * music_level);
         if (music_level <= 0 && snd_playing(LOBBY_MUSIC) == 1) {
@@ -272,6 +276,8 @@ static void logic_update(void) {
     tick_fps_meter();
     if (game_state == ST_SOLO) {
         update_game();
+    } else if (game_state == ST_WORLD) {
+        update_world();
     } else if (game_state == ST_ONLINE) {
         update_online();
     } else if (game_state == ST_LOGIN) {
@@ -308,6 +314,8 @@ static void draw_screen(void) {
         draw_promo();
     } else if (game_state == ST_PRIVACY) {
         draw_privacy();
+    } else if (game_state == ST_WORLD) {
+        draw_world();
     } else {
         draw_online();
     }
@@ -354,6 +362,10 @@ static double logic_back(void) {
             return 1;
         }
         start_transition(ST_LOBBY);
+        return 1;
+    }
+    if (game_state == ST_WORLD) {
+        start_transition(ST_MODES);
         return 1;
     }
     if (game_state == ST_LEVELS || game_state == ST_SKINS) {
@@ -404,7 +416,7 @@ static void logic_touch(double x, double y, double action, double id) {
      * touch_menu(). Detect controls on touch-down; class-card taps wait for
      * release so a horizontal drag can page without selecting a character. */
     double class_swipe = game_state == ST_CLASSES && classes_swipe_zone(x, y);
-    if (action == 0 && game_state != ST_SOLO && game_state != ST_ONLINE && class_swipe == 0 &&
+    if (action == 0 && game_state != ST_SOLO && game_state != ST_ONLINE && game_state != ST_WORLD && class_swipe == 0 &&
         menu_button_hit(x, y) == 1) {
         play_button_click();
     }
@@ -412,6 +424,8 @@ static void logic_touch(double x, double y, double action, double id) {
         touch_lobby(x, y, action);
     } else if (game_state == ST_SOLO || game_state == ST_ONLINE) {
         touch_game(x, y, action, id);
+    } else if (game_state == ST_WORLD) {
+        touch_world(x, y, action, id);
     } else {
         touch_menu(x, y, action, id);
     }
