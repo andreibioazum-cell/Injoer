@@ -93,6 +93,7 @@ void rect_rot(float x, float y, float w, float h, float angle, uint32_t color);
 void circle(float x, float y, float r, uint32_t color);
 void ring(float x, float y, float r, float t, uint32_t color);
 void line(float x1, float y1, float x2, float y2, float thickness, uint32_t color);
+void tri(float x1, float y1, float x2, float y2, float x3, float y3, uint32_t color);
 void clear_screen(uint32_t color);
 void ds_set_asset_manager(AAssetManager *assets);
 void ds_release_assets(void);

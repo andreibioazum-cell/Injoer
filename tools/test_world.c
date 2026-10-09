@@ -14,60 +14,9 @@ double dt = 1.0 / 60.0;
 int mouse_clicked;
 double ds_mouse_x;
 double ds_mouse_y;
-Joy joy;
 
-static int draw_calls;
-
-struct DSArray {
-    double *data;
-    size_t length;
-    size_t capacity;
-};
-
-DSArray *arr_new(void) {
-    DSArray *array = calloc(1, sizeof(*array));
-    assert(array);
-    return array;
-}
-
-void arr_push(DSArray *array, double value) {
-    if (array->length == array->capacity) {
-        size_t capacity = array->capacity ? array->capacity * 2 : 8;
-        double *data = realloc(array->data, capacity * sizeof(*data));
-        assert(data);
-        array->data = data;
-        array->capacity = capacity;
-    }
-    array->data[array->length++] = value;
-}
-
-double arr_get(DSArray *array, double index) {
-    size_t position = (size_t)index;
-    return array && position < array->length ? array->data[position] : 0;
-}
-
-void arr_set(DSArray *array, double index, double value) {
-    size_t position = (size_t)index;
-    while (array->length <= position)
-        arr_push(array, 0);
-    array->data[position] = value;
-}
-
-double arr_len(DSArray *array) {
-    return array ? (double)array->length : 0;
-}
-
-void arr_clear(DSArray *array) {
-    if (array)
-        array->length = 0;
-}
-
-void arr_free(DSArray *array) {
-    if (!array)
-        return;
-    free(array->data);
-    free(array);
-}
+static int tri_calls;
+static int snd_play_calls;
 
 double clamp(double value, double low, double high) {
     return value < low ? low : value > high ? high : value;
@@ -82,13 +31,16 @@ void ds_runtime_error(const char *format, ...) {
     abort();
 }
 
+void ds_set_asset_manager(AAssetManager *assets) {
+    (void)assets;
+}
+
 void rect(float x, float y, float w, float h, uint32_t color) {
     (void)x;
     (void)y;
     (void)w;
     (void)h;
     (void)color;
-    draw_calls++;
 }
 
 void circle(float x, float y, float r, uint32_t color) {
@@ -96,7 +48,6 @@ void circle(float x, float y, float r, uint32_t color) {
     (void)y;
     (void)r;
     (void)color;
-    draw_calls++;
 }
 
 void ring(float x, float y, float r, float t, uint32_t color) {
@@ -105,27 +56,6 @@ void ring(float x, float y, float r, float t, uint32_t color) {
     (void)r;
     (void)t;
     (void)color;
-    draw_calls++;
-}
-
-void line(float x1, float y1, float x2, float y2, float thickness, uint32_t color) {
-    (void)x1;
-    (void)y1;
-    (void)x2;
-    (void)y2;
-    (void)thickness;
-    (void)color;
-    draw_calls++;
-}
-
-void roundrect(float x, float y, float w, float h, float r, uint32_t color) {
-    (void)x;
-    (void)y;
-    (void)w;
-    (void)h;
-    (void)r;
-    (void)color;
-    draw_calls++;
 }
 
 void text(const char *string, float x, float y, uint32_t color) {
@@ -133,7 +63,6 @@ void text(const char *string, float x, float y, uint32_t color) {
     (void)x;
     (void)y;
     (void)color;
-    draw_calls++;
 }
 
 void text_scaled(const char *string, float x, float y, uint32_t color, float scale) {
@@ -142,103 +71,154 @@ void text_scaled(const char *string, float x, float y, uint32_t color, float sca
     (void)y;
     (void)color;
     (void)scale;
-    draw_calls++;
 }
 
 int text_ink_width(const char *string) {
     return (int)strlen(string) * 10;
 }
 
-int text_ink_height(const char *string) {
-    (void)string;
-    return 20;
+void clear_screen(uint32_t color) {
+    (void)color;
 }
 
-int text_ink_top(const char *string) {
-    (void)string;
-    return 0;
+void tri(float x1, float y1, float x2, float y2, float x3, float y3, uint32_t color) {
+    (void)color;
+    assert(isfinite(x1) && isfinite(y1) && isfinite(x2) && isfinite(y2) && isfinite(x3) && isfinite(y3));
+    tri_calls++;
+}
+
+int snd_load(const char *name) {
+    return name && *name;
 }
 
 int snd_play(const char *name) {
     (void)name;
+    snd_play_calls++;
     return 1;
 }
 
 int main(void) {
-    double x0;
-    double step;
-    int i;
+    double x0, z0, step, yaw0;
+    double sx, sy, f, dist;
+    int i, base;
+    M4 m, v;
+    V3 cam, t;
 
-    state_create();
-    state_ready = 1;
-    assert(ST_WORLD == 3);
-    assert(strcmp(world_mode_label(), "World 3D") == 0);
-    language = 1;
-    assert(strcmp(world_mode_label(), "Мир 3D") == 0);
-    language = 0;
+    game_init(NULL);
+    assert(w3_sx == 130 && w3_sy == screen_h - 150 && w3_sr == 70);
+    assert(w3_jx == screen_w - 140 && w3_jy == screen_h - 150);
+    assert(w3_cam_yaw == M3_PI && w3_snd == 1);
 
-    game_state = ST_MODES;
-    init_world();
-    assert(joy.x == 130 && joy.y == screen_h - 150 && joy.r == 70);
-    assert(w_jump_id == -1 && w_px == 0 && w_pz == 0);
+    /* The look-at target projects to the screen center. */
+    w3_cam_view(&v, &cam);
+    t = m3_pt(&v, m3_v(w3_px, 1.6, w3_pz));
+    assert(fabs(t.x) < 1e-9 && fabs(t.y) < 1e-9 && t.z < 0);
 
-    /* Stick right: the same unit-speed stick as the battle screen. */
-    touch_world(joy.x + 70, joy.y, 0, 3);
-    assert(joy.dx == 1 && joy.dy == 0);
-    x0 = w_px;
-    update_world();
-    assert(w_px > x0 && w_moving == 1 && w_camx > 0);
-    step = w_px - x0;
-    assert(fabs(step - (joy_speed / 50) * dt) < 1e-9);
+    /* Stick right walks at full unit speed. */
+    touch_world(w3_sx + 70, w3_sy, 0, 3);
+    assert(w3_sdx == 1 && w3_sdy == 0);
+    x0 = w3_px;
+    z0 = w3_pz;
+    game_update();
+    assert(w3_moving == 1);
+    step = sqrt((w3_px - x0) * (w3_px - x0) + (w3_pz - z0) * (w3_pz - z0));
+    assert(fabs(step - W3_SPEED * dt) < 1e-9);
     /* Near-center push travels exactly as far as the rim push. */
-    touch_world(joy.x + 14, joy.y, 2, 3);
-    assert(joy.dx == 1 && joy.dy == 0);
-    x0 = w_px;
-    update_world();
-    assert(fabs((w_px - x0) - step) < 1e-9);
-    /* Release stops the walk. */
+    touch_world(w3_sx + 14, w3_sy, 2, 3);
+    assert(w3_sdx == 1 && w3_sdy == 0);
+    x0 = w3_px;
+    z0 = w3_pz;
+    world_update();
+    dist = sqrt((w3_px - x0) * (w3_px - x0) + (w3_pz - z0) * (w3_pz - z0));
+    assert(fabs(dist - step) < 1e-9);
+    /* Deadzone holds still, release resets the stick. */
+    touch_world(w3_sx + 5, w3_sy, 2, 3);
+    assert(w3_sdx == 0 && w3_sdy == 0);
+    x0 = w3_px;
+    world_update();
+    assert(w3_px == x0 && w3_moving == 0);
     touch_world(0, 0, 1, 3);
-    assert(joy.dx == 0 && joy.dy == 0);
-    x0 = w_px;
-    update_world();
-    assert(w_px == x0 && w_moving == 0);
+    assert(w3_sid == -1 && w3_sdx == 0);
 
-    /* Jump button lobs the avatar up and lands back on the plate. */
-    touch_world(w_jump_x, w_jump_y, 0, 5);
-    assert(w_vy > 0 && w_py > 0);
-    touch_world(0, 0, 1, 5);
-    assert(w_jump_id == -1);
+    /* Tap on the green button jumps and lands back on the plate. */
+    touch_world(w3_jx, w3_jy, 0, 5);
+    assert(w3_jid == 5);
+    touch_world(w3_jx, w3_jy, 1, 5);
+    assert(w3_vy > 0 && w3_py > 0 && w3_jid == -1 && snd_play_calls == 1);
     i = 0;
-    while (i < 600) {
-        update_world();
+    while (i < 200) {
+        world_update();
         i = i + 1;
     }
-    assert(w_py == 0 && w_vy == 0);
+    assert(w3_py == 0 && w3_vy == 0);
+
+    /* A drag started on the button becomes a camera orbit, not a jump. */
+    touch_world(w3_jx, w3_jy, 0, 6);
+    touch_world(w3_jx + 40, w3_jy, 2, 6);
+    assert(w3_jid == -1 && w3_oid == 6);
+    yaw0 = w3_cam_yaw;
+    touch_world(w3_jx + 90, w3_jy, 2, 6);
+    assert(fabs((w3_cam_yaw - yaw0) - (0 - 50 * 0.008)) < 1e-9);
+    touch_world(0, 0, 1, 6);
+    assert(w3_oid == -1 && w3_vy == 0);
+
+    /* Free drag orbits with clamped pitch. */
+    w3_cam_yaw = M3_PI;
+    w3_cam_pitch = 0.42;
+    touch_world(640, 100, 0, 7);
+    assert(w3_oid == 7);
+    touch_world(640, 10000, 2, 7);
+    assert(w3_cam_pitch == 1.15);
+    touch_world(640, -10000, 2, 7);
+    assert(w3_cam_pitch == 0.12);
+    touch_world(0, 0, 1, 7);
+    assert(w3_oid == -1);
 
     /* Blocks are solid: walking into one pushes the player out. */
-    w_px = wb_x[0] + wb_half[0] + 0.4;
-    w_pz = wb_z[0];
-    touch_world(joy.x - 70, joy.y, 0, 9);
+    w3_cam_yaw = M3_PI;
+    w3_px = w3_bx[0] + w3_bhx[0] + 0.4;
+    w3_pz = w3_bz[0];
+    touch_world(w3_sx + 70, w3_sy, 0, 9);
     i = 0;
     while (i < 30) {
-        update_world();
+        world_update();
         i = i + 1;
     }
     touch_world(0, 0, 1, 9);
-    assert(w_px >= wb_x[0] + wb_half[0] + 0.44);
+    assert(w3_px >= w3_bx[0] + w3_bhx[0] + 0.44);
 
-    /* A full frame draws the plate, blocks, avatar and controls. */
-    draw_calls = 0;
-    draw_world();
-    assert(draw_calls > 50);
+    /* A full frame draws the plate, boxes, avatar and controls. */
+    tri_calls = 0;
+    game_draw(0);
+    assert(tri_calls > 100);
 
-    /* The back button returns to the mode list. */
-    t_dir = 0;
-    touch_world(screen_w / 2, back_y + 10, 0, 7);
-    assert(t_dir == 1 && t_target == ST_MODES);
+    /* Projection: view center maps to the screen center. */
+    r3_begin();
+    r3_proj(0, 0, -10, &sx, &sy);
+    assert(fabs(sx - 640) < 1e-6 && fabs(sy - 360) < 1e-6);
+    f = 360.0 / tan(R3_FOV * 0.5);
+    r3_proj(2, 1, -10, &sx, &sy);
+    assert(fabs(sx - (640 + 2 * f / 10)) < 1e-6);
+    assert(fabs(sy - (360 - 1 * f / 10)) < 1e-6);
 
-    state_destroy();
-    state_ready = 0;
+    /* Fully-behind triangles emit nothing, crossing ones get clipped. */
+    base = tri_calls;
+    r3_tri(0, 0, 5, 1, 0, 5, 0, 1, 5, 0xFF0000);
+    assert(tri_calls == base);
+    r3_tri(0, 0, -5, 1, 0, -5, 0, 0, 5, 0xFF0000);
+    assert(tri_calls > base);
+
+    /* A box behind the camera emits nothing and leaves the pool clean. */
+    m3_translate(&m, r3_cam.x, r3_cam.y, r3_cam.z - 50.0);
+    r3_collect(&m, 1, 1, 1, 0xFF0000);
+    base = tri_calls;
+    r3_flush();
+    assert(tri_calls == base && r3_n == 0);
+
+    assert(game_back() == 0);
+    game_reset();
+    assert(w3_px == 0 && w3_pz == 0 && w3_cam_yaw == M3_PI);
+
     puts("Injoer 3D world: normal");
     return 0;
 }

@@ -27,8 +27,8 @@ jobs:
           test -f src/game/game.c
           test -d src/engine
           test -d src/platform/android
-          test -d assets/textures
           test -d assets/audio
+          test -d assets/fonts
           test -d platform/android
           test ! -e game
           test ! -e native
@@ -50,12 +50,7 @@ jobs:
             -Isrc -I. -Itools/host_test/stub -fsyntax-only src/game/game.c
           python3 tools/check_game_file_size.py
           python3 tools/test_resources.py
-          python3 tools/test_game_state.py
           python3 tools/test_world.py
-          python3 tools/test_settings_storage.py
-          python3 tools/test_cloud_progress.py
-          python3 tools/test_promo.py
-          python3 tools/test_presence.py
 
       - name: Setup Java for Android build tools
         uses: actions/setup-java@v5

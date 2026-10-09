@@ -64,7 +64,8 @@ typedef enum {
     DS_CMD_TEXT,
     DS_CMD_TEX_TINT,
     DS_CMD_RECT_ROT,
-    DS_CMD_TEX_ROUND
+    DS_CMD_TEX_ROUND,
+    DS_CMD_TRI
 } DSCommand;
 typedef struct {
     DSCommand t;
@@ -90,6 +91,10 @@ typedef struct {
             uint32_t c;
         } ln;
         struct {
+            float x1, y1, x2, y2, x3, y3;
+            uint32_t c;
+        } tr;
+        struct {
             float x, y, a, sc;
             Texture *tx;
         } tx;
@@ -114,6 +119,9 @@ typedef struct {
         } tt;
     } v;
 } DSCmd;
+
+/* Raw screen-space triangle, defined in tri.inc (used by CPU-projected 3D). */
+static int geo_tri(float x1, float y1, float x2, float y2, float x3, float y3, uint32_t c);
 
 static uint32_t pack_c(uint32_t c) {
     uint32_t a = (c >> 24) & 0xff, r = (c >> 16) & 0xff, g = (c >> 8) & 0xff, b = c & 0xff;
