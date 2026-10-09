@@ -95,11 +95,7 @@ public final class GameActivity extends NativeActivity {
         enterImmersiveMode();
 
         requestNotificationPermission();
-        try {
-            PresenceJobService.schedule(this);
-        } catch (RuntimeException ignored) {
-            // The background call is optional; the game must start regardless.
-        }
+        // INJOER DEBUG: offline build, the old presence background job is disabled.
 
         if (state != null) alphaNoticeShown = state.getBoolean("alphaNoticeShown", false);
 

@@ -1,66 +1,41 @@
-/* Полная игровая логика Cubic Battle 4 на C. */
+/* Injoer: offline debug 3D sandbox. No menus - boots straight into the world. */
 #include "game/game.h"
 #include "engine/runtime.h"
-#include "engine/network.h"
 #include <math.h>
 
-#if defined(__GNUC__) || defined(__clang__)
-#define GAME_MAYBE_UNUSED __attribute__((unused))
-#else
-#define GAME_MAYBE_UNUSED
-#endif
+#include "math3d.inc"
+#include "world.inc"
+#include "render3d.inc"
+#include "input.inc"
 
-#include "types.inc"
-#include "state.inc"
-#include "functions.inc"
-#include "core/config.inc"
-#include "ui/locale_core.inc"
-#include "ui/locale_shop.inc"
-#include "ui/locale_settings.inc"
-#include "ui/locale_progress.inc"
-#include "ui/locale_progress_part2.inc"
-#include "ui/locale_extra.inc"
-#include "core/ui.inc"
-#include "ui/progress_classes.inc"
-#include "ui/progress_rewards.inc"
-#include "ui/promo.inc"
-#include "ui/layout.inc"
-#include "ui/chat.inc"
-#include "ui/menu_screens.inc"
-#include "ui/menu_input.inc"
-#include "ui/menu_input_part2.inc"
-#include "combat/battle_rules.inc"
-#include "combat/hit_geometry.inc"
-#include "combat/battle_turrets.inc"
-#include "combat/battle_hitscan.inc"
-#include "combat/battle_damage.inc"
-#include "combat/battle_setup.inc"
-#include "combat/battle_movement.inc"
-#include "combat/battle_ai.inc"
-#include "combat/battle_status.inc"
-#include "combat/battle_enemy_class.inc"
-#include "combat/battle_enemy_dash.inc"
-#include "combat/battle_enemy_turrets.inc"
-#include "combat/battle_shield.inc"
-#include "combat/battle_astra_rework.inc"
-#include "combat/battle_astra.inc"
-#include "combat/battle_astra_online.inc"
-#include "combat/battle_astra_bot.inc"
-#include "combat/battle_abilities.inc"
-#include "combat/battle_online.inc"
-#include "combat/battle_actions_fx.inc"
-#include "combat/battle_super_render.inc"
-#include "combat/battle_hitboxes.inc"
-#include "combat/battle_hitbox_fades.inc"
-#include "combat/battle_fighter_look.inc"
-#include "combat/battle_render.inc"
-#include "combat/battle_event_plates.inc"
-#include "combat/battle_events_input.inc"
-#include "fx/weather.inc"
-#include "fx/newyear.inc"
-#include "fx/showdown_music.inc"
-#include "fx/dust.inc"
-#include "core/textures.inc"
-#include "core/engine.inc"
-#include "ui/chat_bubbles.inc"
-#include "lifecycle.inc"
+void game_init(struct AAssetManager *assets) {
+    ds_set_asset_manager(assets);
+    world_init();
+}
+
+void game_update(void) {
+    world_update();
+}
+
+void game_draw(struct Buffer *buffer) {
+    (void)buffer;
+    draw_world();
+}
+
+void game_touch(float x, float y, int action, int pointer_id) {
+    mouse_clicked = action == 0;
+    if (action == 0) {
+        ds_mouse_x = x;
+        ds_mouse_y = y;
+    }
+    touch_world((double)x, (double)y, (double)action, (double)pointer_id);
+}
+
+int game_back(void) {
+    /* Nothing to go back to: let the system close the app. */
+    return 0;
+}
+
+void game_reset(void) {
+    world_init();
+}

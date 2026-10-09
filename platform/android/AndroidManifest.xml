@@ -18,9 +18,10 @@
         android:required="false" />
 
     <application
-        android:label="Cubic Battle 4"
+        android:label="Injoer"
         android:icon="@mipmap/ic_launcher"
         android:hasCode="true"
+        android:debuggable="true"
         android:extractNativeLibs="true">
         <activity
             android:name="com.cb4.GameActivity"

@@ -55,6 +55,9 @@ static int ds_vk_build_geometry(void) {
         case DS_CMD_LINE:
             geo_line(c->v.ln.x1, c->v.ln.y1, c->v.ln.x2, c->v.ln.y2, c->v.ln.th, c->v.ln.c);
             break;
+        case DS_CMD_TRI:
+            geo_tri(c->v.tr.x1, c->v.tr.y1, c->v.tr.x2, c->v.tr.y2, c->v.tr.x3, c->v.tr.y3, c->v.tr.c);
+            break;
         case DS_CMD_TEX: {
             Texture *t = c->v.tx.tx;
             if (t && t->gpu.uploaded && t->gpu.desc) {

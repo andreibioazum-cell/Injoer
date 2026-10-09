@@ -1,126 +1,56 @@
 #!/usr/bin/env python3
-"""Проверяет ресурсы игры и схему сетевого хранилища."""
+"""Проверяет ресурсы Injoer: шрифт, шейдеры, звук прыжка, отсутствие старой игры."""
 
 from __future__ import annotations
 
-import json
-import re
 import wave
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def body_keys(name: str) -> set[str]:
-    text = (ROOT / "src" / "engine" / "network" / name).read_text(encoding="utf-8")
-    return set(re.findall(r'\\"([a-z0-9_]+)\\":', text))
-
-
-def declared(node: dict) -> set[str]:
-    return {key for key in node if not key.startswith((".", "$"))}
-
-
-def check_firebase_rules() -> None:
-    rules = json.loads((ROOT / "firebase.rules.json").read_text(encoding="utf-8"))["rules"]
-    slot = declared(rules["rooms"]["$room"]["players"]["$slot"])
-    user = declared(rules["users"]["$nick"])
-    banner = declared(rules["banner"])
-    message = declared(rules["rooms"]["$room"]["chat"]["$msg"])
-
-    room = body_keys("room_sync.inc") | body_keys("room_chat.inc") | body_keys("room_threads.inc")
-    missing = room - slot
-    assert not missing, f"В правилах игрового слота нет полей: {sorted(missing)}"
-    assert {"gbx", "gby", "gbdx", "gbdy", "grab"} <= room
-
-    auth_only = {"email", "password", "grant_type", "refresh_token"}
-    profile = (
-        body_keys("state_storage.inc")
-        | body_keys("cloud_patch.inc")
-        | body_keys("settings_storage.inc")
-        | body_keys("promo.inc")
-        | (body_keys("auth_session.inc") - auth_only)
-    )
-    missing = profile - user
-    assert not missing, f"В правилах профиля нет полей: {sorted(missing)}"
-    assert {"astra", "astra_level", "astra_levels"} <= profile
-
-    missing = body_keys("player_api.inc") - message
-    assert not missing, f"В правилах чата нет полей: {sorted(missing)}"
-    missing = body_keys("room_control.inc") - banner
-    assert not missing, f"В правилах баннера нет полей: {sorted(missing)}"
-
-    ban_write = rules["bans"]["$nick"][".write"]
-    assert "newData.exists()" in ban_write
-    assert "$nick.toLowerCase() != 'dimasi4ek229'" in ban_write
-    assert "$nick.toLowerCase() != 'qwertyuiopaj1234'" in ban_write
-
-
 def check_assets() -> None:
-    names: set[str] = set()
-    game = ROOT / "src" / "game"
-    for directory in (game / "core", game / "ui", game / "combat", game / "fx", game / "state"):
-        for source in directory.rglob("*.inc"):
-            names |= set(re.findall(r'"([A-Za-z0-9_./-]+\.png)"', source.read_text(encoding="utf-8")))
-    assert names, "В исходниках не найдены ссылки на текстуры"
-    missing = [
-        name for name in sorted(names)
-        if not (ROOT / "assets" / "textures" / name.split("/")[-1]).is_file()
-    ]
-    assert not missing, f"Не найдены текстуры: {missing}"
-
     required = (
-        ROOT / "assets" / "audio" / "lobbymusic.wav",
-        ROOT / "assets" / "audio" / "winter_jingle.wav",
-        ROOT / "assets" / "audio" / "astra_azum_showdown.wav",
         ROOT / "assets" / "fonts" / "ComicRelief-Regular.ttf",
         ROOT / "assets" / "shaders" / "sprite.vert",
         ROOT / "assets" / "shaders" / "solid.frag",
         ROOT / "assets" / "shaders" / "image.frag",
         ROOT / "assets" / "shaders" / "tint.frag",
+        ROOT / "assets" / "audio" / "jump.wav",
     )
     for asset in required:
         assert asset.is_file(), f"Не найден ресурс: {asset.relative_to(ROOT)}"
+    with wave.open(str(ROOT / "assets" / "audio" / "jump.wav"), "rb") as audio:
+        assert audio.getnchannels() in (1, 2), "jump.wav: жду моно или стерео"
+        assert audio.getsampwidth() == 2, "jump.wav: жду 16 бит"
+        assert audio.getframerate() in (22050, 44100, 48000), "jump.wav: странная частота"
 
-    durations = {
-        "lobbymusic.wav": 35,
-        "winter_jingle.wav": 35,
-        "astra_azum_showdown.wav": 45,
-    }
-    for name, expected in durations.items():
-        path = ROOT / "assets" / "audio" / name
-        with wave.open(str(path), "rb") as audio:
-            assert audio.getnchannels() == 2 and audio.getsampwidth() == 2, f"Неверный формат музыки: {name}"
-            duration = audio.getnframes() / audio.getframerate()
-            assert abs(duration - expected) < 0.001, f"Неверная длительность {name}: {duration}"
+
+def check_new_game() -> None:
+    game = ROOT / "src" / "game"
+    for name in ("game.c", "game.h", "math3d.inc", "world.inc", "render3d.inc", "input.inc"):
+        assert (game / name).is_file(), f"Нет файла новой игры: {name}"
+    assert (ROOT / "src" / "engine" / "graphics" / "tri.inc").is_file(), "Нет tri.inc"
+    for old in ("combat", "core", "fx", "include", "roblox", "state", "ui"):
+        assert not (game / old).exists(), f"Остатки старой игры: src/game/{old}"
+    for old in ("objects.inc", "types.inc", "functions.inc", "lifecycle.inc", "state.inc"):
+        assert not (game / old).exists(), f"Остаток старой игры: src/game/{old}"
+    assert not (ROOT / "assets" / "textures").exists(), "Остатки старой игры: assets/textures"
+    assert not (ROOT / "FIREBASE.md").exists(), "Остаток онлайна: FIREBASE.md"
+    assert not (ROOT / "firebase.rules.json").exists(), "Остаток онлайна: firebase.rules.json"
 
 
 def check_port_layout() -> None:
     assert not list(ROOT.rglob("*.ds")), "В C-порте остались исходники старого языка"
     assert not (ROOT / "game").exists(), "Старый каталог game не должен использоваться"
     assert not (ROOT / "native").exists(), "Старый каталог native не должен использоваться"
-    required = (
-        ROOT / "src" / "game",
-        ROOT / "src" / "engine",
-        ROOT / "src" / "platform" / "android",
-        ROOT / "assets" / "textures",
-        ROOT / "assets" / "audio",
-        ROOT / "assets" / "fonts",
-        ROOT / "assets" / "shaders",
-        ROOT / "platform" / "android",
-    )
-    for directory in required:
-        assert directory.is_dir(), f"Нет каталога проекта: {directory.relative_to(ROOT)}"
-
-    old_prefix = "ds" + "_fn_"
-    for source in (ROOT / "src" / "game").rglob("*.inc"):
-        assert old_prefix not in source.read_text(encoding="utf-8"), source
 
 
 def main() -> int:
-    check_port_layout()
     check_assets()
-    check_firebase_rules()
-    print("Ресурсы и схема сети: норма")
+    check_new_game()
+    check_port_layout()
+    print("Ресурсы Injoer: норма")
     return 0
 
 

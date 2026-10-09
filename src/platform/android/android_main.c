@@ -329,7 +329,7 @@ void android_main(struct android_app *app) {
     ds_sound_set_java_vm((void *)app->activity->vm);
     net_set_data_path(app->activity->internalDataPath);
     ds_set_activity(app->activity);
-    ds_log("Cubic Battle 4: C + Vulkan");
+    ds_log("Injoer: C + Vulkan (debug offline)");
     for (;;) {
         struct android_poll_source *source = NULL;
         int ident;
