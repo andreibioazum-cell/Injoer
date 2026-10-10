@@ -49,6 +49,7 @@ static void reset_battle(void) {
     azum_revived = 0;
     revive_prot = 0;
     cups_awarded = 0;
+    player_hit_this_battle = 0;
     match_seen_foe = 0;
     foes_seen_t = 0;
     foes_gone_t = 0;

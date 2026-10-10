@@ -24,6 +24,18 @@ static void check_achievements(void) {
     }
 }
 
+/* The flawless-win objective needs full HP and no incoming hit event. The
+ * damage path records a hit before Ebuc's turrets can absorb its damage. */
+static double perfect_win_eligible(void) {
+    if (player_hit_this_battle == 1 || player->max_hp <= 0) {
+        return 0;
+    }
+    if (player->hp < player->max_hp - 1e-9) {
+        return 0;
+    }
+    return 1;
+}
+
 static void save_progress(void) {
     double bp_lv = net_load_bp_level();
     net_save_progress_all(cups, candies, player_class, class_owned_of(CLASS_AZUM), class_owned_of(CLASS_SANTA),

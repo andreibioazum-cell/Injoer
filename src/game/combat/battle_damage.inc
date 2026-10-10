@@ -1,5 +1,10 @@
 static double take_damage(double dmg) {
     double real = dmg;
+    /* Track the raw hit before Ebuc's turrets absorb it: full HP alone must not
+     * make a shielded hit count as a flawless battle. */
+    if (finished == 0 && dmg > 0) {
+        player_hit_this_battle = 1;
+    }
     if (player_class == CLASS_EBUC) {
         real = player_shield_absorb(real);
     }
