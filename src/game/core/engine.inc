@@ -220,6 +220,9 @@ static const char *achievement_toast_text(void) {
     if (ach_toast_bit == ACH_ALL_CHARACTERS) {
         return tr_achievement_grass();
     }
+    if (ach_toast_bit == ACH_PERFECT_WIN) {
+        return tr_achievement_perfect_win();
+    }
     return tr_achievement_legends();
 }
 

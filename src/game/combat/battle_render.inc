@@ -128,6 +128,9 @@ static void finish_game(double result) {
         grant_achievement(ACH_FIRST_WIN);
         ds_log("win +%g cups +%g candies", cup_win, candy_win);
     }
+    if (result == 1 && perfect_win_eligible() == 1) {
+        grant_achievement(ACH_PERFECT_WIN);
+    }
     if (result == 2 && cups_awarded == 0) {
         cups_awarded = 1;
         cups = cups - cup_lose;

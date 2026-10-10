@@ -29,6 +29,8 @@ static const char *tr_achievement_locked(void);
 static const char *tr_achievement_toast_title(void);
 static const char *tr_achievement_first_win(void);
 static const char *tr_achievement_first_win_desc(void);
+static const char *tr_achievement_perfect_win(void);
+static const char *tr_achievement_perfect_win_desc(void);
 static const char *tr_achievement_first_buy(void);
 static const char *tr_achievement_first_buy_desc(void);
 static const char *tr_nick(void);

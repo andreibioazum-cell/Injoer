@@ -324,6 +324,14 @@ int main(void) {
     language = 1;
     assert(strcmp(tr_play(), "Играть") == 0);
     language = 0;
+    assert(achievement_count() == 4);
+    assert(achievement_bit(3) == ACH_PERFECT_WIN);
+    assert(strcmp(achievement_title(3), "Flawless Victory") == 0);
+    assert(strcmp(achievement_desc(3), "Win at full health without taking any damage") == 0);
+    language = 1;
+    assert(strcmp(achievement_title(3), "Идеальная победа") == 0);
+    assert(strcmp(achievement_desc(3), "Выиграть с полным HP, не получив ни единого урона") == 0);
+    language = 0;
 
     assert(class_count == 6 && CLASS_ASTRA == 4 && CLASS_ASTRA_REWORK == 5);
     star_line_count = 0;
@@ -943,6 +951,37 @@ int main(void) {
     arr_set(remotes, 1 * remote_fields + 10, CLASS_ORDINARY);
     arr_set(remotes, 1 * remote_fields + 11, SKIN_NORMAL);
     stub_net_slot = -1;
+
+    /* Ebuc's turret can absorb all incoming damage while leaving player HP
+     * untouched; that still fails the flawless-win objective. */
+    achievement_mask = 0;
+    player_class = CLASS_EBUC;
+    game_state = ST_SOLO;
+    reset_battle();
+    double ebuc_full_hp = player->max_hp;
+    arr_set(turret_x, 0, player->x);
+    arr_set(turret_y, 0, player->y);
+    arr_set(turret_hp, 0, 1);
+    arr_set(turret_maxhp, 0, 1);
+    assert(player->hp == ebuc_full_hp && perfect_win_eligible() == 1);
+    assert(take_damage(1) == 0);
+    assert(player->hp == ebuc_full_hp && turret_alive(0) == 0);
+    assert(player_hit_this_battle == 1 && perfect_win_eligible() == 0);
+    finish_game(1);
+    assert(has_achievement(ACH_PERFECT_WIN) == 0);
+
+    /* It only unlocks on a win at full HP after a clean battle; being below
+     * full HP is not enough even if no damage event was recorded. */
+    player_class = CLASS_ORDINARY;
+    reset_battle();
+    assert(player_hit_this_battle == 0 && perfect_win_eligible() == 1);
+    player->hp = player->max_hp - 0.25;
+    assert(perfect_win_eligible() == 0);
+    player->hp = player->max_hp;
+    assert(perfect_win_eligible() == 1);
+    finish_game(1);
+    assert(has_achievement(ACH_PERFECT_WIN) == 1);
+    assert(ach_toast_bit == ACH_PERFECT_WIN);
 
     player->hp = 1;
     game_state = ST_ONLINE;

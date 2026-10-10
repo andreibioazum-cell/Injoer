@@ -210,6 +210,20 @@ static const char *tr_achievement_first_win_desc(void) {
     return "Win your first battle";
 }
 
+static const char *tr_achievement_perfect_win(void) {
+    if (language == 1) {
+        return "Идеальная победа";
+    }
+    return "Flawless Victory";
+}
+
+static const char *tr_achievement_perfect_win_desc(void) {
+    if (language == 1) {
+        return "Выиграть с полным HP, не получив ни единого урона";
+    }
+    return "Win at full health without taking any damage";
+}
+
 static GAME_MAYBE_UNUSED const char *tr_achievement_first_buy(void) {
     if (language == 1) {
         return "Покупка";
